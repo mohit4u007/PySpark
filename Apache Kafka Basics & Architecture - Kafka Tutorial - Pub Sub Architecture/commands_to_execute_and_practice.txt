@@ -1,0 +1,24 @@
+Publisher and Subscribe distributed streaming service or messaging system architecture
+Producer and Consumer
+Msg can only be published for a particular topic
+Kafka works in a cluster fashion
+Server or nodes are known as Brockers and Zookeeper maintains the metadata and manages the brockers
+Brockers and also known as bootstrap servers
+Brockers maitain metadata of topic among themselves
+Horizonal scaling in kafka cluster
+Kafka topic is distributed in form of partitions, FIFO format
+Offset is maintained at the zookeeper so that the consumer doesn't loose the messages it has already processed
+Replication factor in kafka for fault tolerance, same msg is replicated in multiple brokers, of which one is a leader and rest follower
+Command:
+docker exec -it 5b5ce3a6a6c947876e03750546b23c3e82539eb02159efa84c00ae1952155a46 /bin/bash
+kafka-topics --list --bootstrap-server localhost:19092
+kafka-topics --create --topic test-topic --bootstrap-server localhost:19092
+kafka-topics --describe --topic test-topic --bootstrap-server localhost:19092
+kafka-topics --create --topic test-topic-1 --partitions 3 --replication-factor 2 --bootstrap-server localhost:19092
+kafka-topics --describe --topic test-topic-1 --bootstrap-server localhost:19092
+kafka-get-offsets --topic test-topic-1 --bootstrap-server localhost:19092
+kafka-console-producer --topic test-topic-1 --bootstrap-server localhost:19092
+kafka-console-consumer --topic test-topic-1 --bootstrap-server localhost:19092
+kafka-console-consumer --topic test-topic-1 --bootstrap-server localhost:19092 --partition 0 --offset earliest
+kafka-topics --alter --topic device-data --partitions 8 --bootstrap-server localhost:19092
+docker compose logs -f <container-name>

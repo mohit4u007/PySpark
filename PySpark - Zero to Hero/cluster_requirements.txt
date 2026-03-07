@@ -1,0 +1,4 @@
+# Move below modules to requirements.txt
+kafka-python
+delta-spark
+boto3

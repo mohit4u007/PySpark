@@ -1,0 +1,6 @@
+FROM andreper/spark-worker:3.5.7
+USER root
+
+RUN command -v python3 >/dev/null 2>&1 \
+  && ln -sfn /usr/bin/python3 /usr/local/bin/python \
+  || true

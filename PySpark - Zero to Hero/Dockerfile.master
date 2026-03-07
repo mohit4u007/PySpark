@@ -1,0 +1,7 @@
+FROM andreper/spark-master:3.5.7
+USER root
+
+# ensure python3 exists and create/force the symlink
+RUN command -v python3 >/dev/null 2>&1 \
+  && ln -sfn /usr/bin/python3 /usr/local/bin/python \
+  || true

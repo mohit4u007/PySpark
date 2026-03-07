@@ -1,0 +1,6 @@
+ipykernel
+pyspark
+numpy
+kafka-python
+delta-spark
+boto3

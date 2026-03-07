@@ -1,0 +1,74 @@
+services:
+  pyspark-jupyter:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    user: root
+    container_name: pyspark-jupyter-lab
+    ports:
+      - "4040:4040"
+    environment:
+      SPARK_UI_PORT: 4040
+      GRANT_SUDO: yes
+    volumes:
+      - streaming_data:/practice:rw
+
+  kafka:
+    container_name: kafka
+    image: confluentinc/cp-kafka:latest
+    ports:
+      - "9092:9092"      # EXTERNAL
+      - "19092:19092"    # INTERNAL (optional)
+      - "19093:19093"    # CONTROLLER
+    environment:
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_BROKER_ID: 1
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:19093
+      # These listeners allow you to connect from outside Docker (localhost:9092)
+      # AND from inside Docker (kafka:19092)
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENERS: INTERNAL://0.0.0.0:19092,CONTROLLER://0.0.0.0:19093,EXTERNAL://0.0.0.0:9092
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:19092,EXTERNAL://127.0.0.1:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      # Note: This variable below is not standard in Confluent images and might be ignored,
+      # but it won't hurt to leave it if you are using a wrapper script.
+      # KAFKA_CREATE_TOPICS: "raw:1:1"
+    volumes:
+      - streaming_data:/practice:rw
+
+  db:
+    image: postgres:18.1
+    container_name: postgres-db
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: sqlpad
+      POSTGRES_PASSWORD: sqlpad
+
+  sqlpad:
+    image: sqlpad/sqlpad:7.5.7
+    hostname: 'sqlpad'
+    container_name: sqlpad
+    ports:
+      - "3000:3000"
+    environment:
+      SQLPAD_ADMIN: 'admin@sqlpad.com'
+      SQLPAD_ADMIN_PASSWORD: 'admin'
+      SQLPAD_APP_LOG_LEVEL: debug
+      SQLPAD_WEB_LOG_LEVEL: warn
+      SQLPAD_SEED_DATA_PATH: /etc/sqlpad/seed-data
+      SQLPAD_CONNECTIONS__pgdemo__name: Postgres
+      SQLPAD_CONNECTIONS__pgdemo__driver: postgres
+      SQLPAD_CONNECTIONS__pgdemo__host: postgres-db
+      SQLPAD_CONNECTIONS__pgdemo__database: sqlpad
+      SQLPAD_CONNECTIONS__pgdemo__username: sqlpad
+      SQLPAD_CONNECTIONS__pgdemo__password: sqlpad
+      SQLPAD_CONNECTIONS__pgdemo__multiStatementTransactionEnabled: 'true'
+      SQLPAD_CONNECTIONS__pgdemo__idleTimeoutSeconds: 86400
+    volumes:
+      - ./seed-data:/etc/sqlpad/seed-data
+
+volumes:
+  streaming_data:
