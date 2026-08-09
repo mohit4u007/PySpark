@@ -1,67 +1,107 @@
+# Top-level services managed by Docker Compose. Each service becomes a container.
 services:
+  # Notebook + PySpark tutorial container.
+  # Builds from the local Dockerfile and runs the Jupyter/Spark client environment.
   pyspark-tutorial:
     build:
+      # Build context folder for Docker image creation.
       context: .
+      # Dockerfile to use when building this service image.
       dockerfile: Dockerfile
-    # image: easewithdata/pyspark-jupyter-lab-old
+    # Optional prebuilt image line left for reference if you want to swap to a published image.
+    # container_name gives this container a stable name instead of a generated one.
     container_name: pyspark-tutorial-lab
+    # Define host-to-container port mappings.
     ports:
+        # Alternative Jupyter port mapping left commented out.
         # - 8888:8888
         - 4040:4040
+    # Environment variables to pass into the container.
     environment:
+        # Jupyter port variable left commented out.
         # JUPYTER_PORT: 8888
         SPARK_UI_PORT: 4040
+    # Mount host filesystem or volumes into the container.
     volumes:
-        - spark_data:/data:rw
+        - .:/data:rw
+  # Spark master node container.
   spark-master:
+    # Optional image reference if not building locally.
     # image: andreper/spark-master:3.5.7
     build:
+      # Build context folder for Docker image creation.
       context: .
+      # Dockerfile to use for the Spark master image.
       dockerfile: Dockerfile.master
+    # container_name gives the master a stable, human-readable name.
     container_name: spark-master
+    # Ports exposed by the master service.
     ports:
       - "8080:8080"
       - "7077:7077"
+    # Environment variables passed into the master container.
     environment:
       - INIT_DAEMON_STEP=setup_spark
+    # Mount the project workspace into /data so Spark can access datasets and scripts.
     volumes:
-        - spark_data:/data:rw
+        - .:/data:rw
+  # First Spark worker node container.
   spark-worker-1:
+    # Optional image reference if not building locally.
     # image: andreper/spark-worker:3.5.7
     build:
       context: .
       dockerfile: Dockerfile.worker
+    # container_name gives the worker a stable name for debugging and logs.
     container_name: spark-worker-1
+    # depends_on controls service startup order.
     depends_on:
       - spark-master
+    # Ports exposed by this worker service.
     ports:
       - "8081:8081"
+    # Environment variables including the Spark master URL.
     environment:
       - "SPARK_MASTER=spark://spark-master:7077"
+    # Shared volume for worker access to Spark data.
     volumes:
-        - spark_data:/data:rw
+        - .:/data:rw
+  # Second Spark worker node container.
   spark-worker-2:
+    # Optional image reference if not building locally.
     # image: andreper/spark-worker:3.5.7
     build:
       context: .
       dockerfile: Dockerfile.worker
+    # container_name gives the worker a stable name for debugging and logs.
     container_name: spark-worker-2
+    # Depends on the master so the worker starts after it.
     depends_on:
       - spark-master
+    # Ports exposed by this worker service.
     ports:
       - "8082:8081"
+    # Environment variables including the Spark master URL.
     environment:
       - "SPARK_MASTER=spark://spark-master:7077"
+    # Shared volume for worker access to Spark data.
     volumes:
-        - spark_data:/data:rw
+        - .:/data:rw
+  # Spark History Server container for viewing completed application history.
   spark-history-server:
-      image: rangareddy1988/spark-history-server:3.5.0
-      container_name: spark-history-server
-      depends_on:
-        - spark-master
-      ports:
-        - "18081:18081"
-      volumes:
-        - /tmp/spark-events-local:/tmp/spark-events
-volumes:
-  spark_data:
+    # Image used to run Spark history server UI.
+    image: rangareddy1988/spark-history-server:3.5.0
+    # Stable container name for the history server.
+    container_name: spark-history-server
+    # Wait for the Spark master before starting this service.
+    depends_on:
+      - spark-master
+    # Port mapping for the Spark History Server UI.
+    ports:
+      - "18081:18081"
+    # Mount local event log directory into the history server.
+    volumes:
+      - /tmp/spark-events-local:/tmp/spark-events
+# Named Docker volumes available for mounting into services.
+# volumes:
+#   spark_data:
